@@ -1,7 +1,6 @@
 # Batch Update Mixtape
 
 ## Overview
----
 A console application that applies a batch of changes to a mixtape file to create an updated output file. The following types of changes can be made:
 
 - Add an existing song to an existing playlist.
@@ -9,7 +8,6 @@ A console application that applies a batch of changes to a mixtape file to creat
 - Remove an existing playlist.
 
 ## Setup
----
 1. Clone this repo wherever you see fit
 2. Add the directory to PATH. You can either add it to your `~/.bash_profile` or export it directly in terminal using:
 ```bash
@@ -17,7 +15,6 @@ export PATH=$PATH:~/your/path/here/jackie_casper_batch_mixtape
 ```
 
 ## Usage
----
 ### Running the Command
 
 The command can be run in the console from any location with the following format:
@@ -89,7 +86,6 @@ Remove an existing playlist. Consists of an array with the ids of playlists to b
 
 
 ## Future Improvements
----
 ### Scalability
 When working with large files a major consideration is memory usage. Currently this command reads the entire files into memory. To accommodate large files I would consider using a stream to parse chuncks of the file at a time and a cache to store any persistent data needed to execute the task. 
 
