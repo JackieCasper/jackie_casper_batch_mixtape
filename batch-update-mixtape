@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+
+require "json"
+
+# Returns the parsed input json
+def input 
+  @input ||= JSON.parse(File.read(ARGV[0]));
+end
+
+# Returns the parsed changes json
+def changes
+  @changes ||= JSON.parse(File.read(ARGV[1]))
+end
+
+# Returns the updated list of playlists
+def output_playlists
+  max_id = 0
+
+  # create an updated list of playlists 
+  playlists = input["playlists"].reduce([]) do |playlists, playlist|
+    # keep track of largest id to use later for added playlists
+    max_id = [max_id, playlist["id"].to_i].max
+
+    # deleted playlists are not added
+    unless playlist_deleted?(playlist)
+      # update song ids 
+      if playlist_updated?(playlist)
+        playlist["song_ids"] = playlist["song_ids"] | added_songs(playlist)
+      end
+      # slice takes out any unwanted keys that could have been added in the json
+      playlists << playlist.slice("id", "user_id", "song_ids")
+    end
+
+    playlists
+  end
+
+  # Create new playlists
+  changes["playlists"]["create"].each do |playlist|
+    # validate song ids
+    playlist["song_ids"] = valid_songs(playlist["song_ids"])
+
+    # only create song if the user is valid and there are existing song ids
+    if(valid_user?(playlist["user_id"]) && !playlist["song_ids"].empty?)
+      # assign id to playlist
+      playlist["id"] = max_id.to_s
+      max_id += 1
+      playlists << playlist
+    end
+  end
+
+  playlists
+end
+
+# Returns all existing user ids
+def user_ids 
+  @user_ids ||= input["users"].map{|user| user["id"]}
+end 
+
+# Returns all existing song ids
+def song_ids
+  @song_ids ||= input["songs"].map{|song| song["id"]}
+end
+
+# Checks if user id exists within existing users
+def valid_user?(user_id)
+  user_ids.include?(user_id)
+end
+
+# Returns song ids that overlap with existing songs
+def valid_songs(songs)
+  song_ids & songs
+end
+
+# Checks if playlist is in the list of deleted playlists
+def playlist_deleted?(playlist)
+  changes["playlists"]["delete"].include?(playlist["id"])
+end
+
+# Checks if playlist is in the list of updated playlists 
+def playlist_updated?(playlist)
+  !changes["playlists"]["update"][playlist["id"]].nil?
+end
+
+# Returns valid song ids for an updated playlist
+def added_songs(playlist)
+  valid_songs(changes["playlists"]["update"][playlist["id"]]["song_ids"])
+end
+
+# writes a new file with changes made
+def write_output 
+  output = {
+    users: input["users"],
+    playlists: output_playlists,
+    songs: input["songs"]
+  }
+  File.new(ARGV[2], "w").write(output.to_json)
+end
+
+write_output
+
